@@ -1,6 +1,6 @@
 import energenie
 
-class EnergeniePlug:
+class EnergeniePlugController:
     def __init__(self):
         energenie.init()
         self.devices = {
