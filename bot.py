@@ -1,7 +1,7 @@
 import telegram
 import config
 from controller import EnergeniePlugController
-from telegram.ext import Updater, CommandHandler
+from telegram.ext import Updater, CommandHandler, RegexHandler
 
 plug_controller = None
 
@@ -79,7 +79,7 @@ def run_app():
     updater = Updater(config.TELEGRAM_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CommandHandler('power', power))
-    updater.dispatcher.add_handlerRegexHandler('^Turn $', power_control)
+    updater.dispatcher.add_handler(RegexHandler('^Turn ', power_control))
     updater.start_polling()
     updater.idle()
 
