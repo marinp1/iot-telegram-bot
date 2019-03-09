@@ -58,20 +58,31 @@ def power(bot, update):
         plug_values['plug_2'] = False
         plug_values['plug_4'] = False
 
-    KEYBOARD_TEXT_1 = 'Turn {} OFF'.format(plug_names['plug_2']) if plug_values['plug_2'] else 'Turn {} OFF'.format(plug_names['plug_2'])
-    KEYBOARD_TEXT_2 = 'Turn {} OFF'.format(plug_names['plug_4']) if plug_values['plug_4'] else 'Turn {} OFF'.format(plug_names['plug_4'])
+    KEYBOARD_TEXT_1 = 'Turn {} OFF'.format(plug_names['plug_2']) if plug_values['plug_2'] else 'Turn {} ON'.format(plug_names['plug_2'])
+    KEYBOARD_TEXT_2 = 'Turn {} OFF'.format(plug_names['plug_4']) if plug_values['plug_4'] else 'Turn {} ON'.format(plug_names['plug_4'])
 
     custom_keyboard = [[KEYBOARD_TEXT_1, KEYBOARD_TEXT_2], 
                     ['Turn all sockets OFF', 'Turn all sockets ON']]
 
     reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard)
     bot.send_message(chat_id=update.message.chat.id,
-                    text="Socket control", 
+                    text="What would you like to do?", 
                     reply_markup=reply_markup)
 
 def power_control(bot, update):
-    bot.send_message(chat_id=update.message.chat.id,
-                    text="Test")
+    text = update.message.text
+    if text == 'Turn {} OFF'.format(plug_names['plug_2']):
+        power_off(bot, update, 'plug_2')
+    elif text == 'Turn {} ON'.format(plug_names['plug_2']):
+        power_on(bot, update, 'plug_2')
+    elif text == 'Turn {} OFF'.format(plug_names['plug_4']):
+        power_off(bot, update, 'plug_4')
+    elif text == 'Turn {} ON'.format(plug_names['plug_4']):
+        power_on(bot, update, 'plug_4')
+    elif text == 'Turn all sockets OFF':
+        power_off(bot, update, 'all')
+    elif text == 'Turn all sockets ON':
+        power_on(bot, update, 'all')
 
 def run_app():
     global plug_controller
