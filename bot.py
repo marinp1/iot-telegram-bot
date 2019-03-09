@@ -18,14 +18,42 @@ def is_authorised(update):
 def power_on(bot, update):
     if not is_authorised(update):
         return False
-    plug.on()
+    plug.on('all')
+    update.message.reply_text(
+        'Power status: ON')
+
+def power_on_2(bot, update):
+    if not is_authorised(update):
+        return False
+    plug.on('plug_2')
+    update.message.reply_text(
+        'Power status: ON')
+
+def power_on_4(bot, update):
+    if not is_authorised(update):
+        return False
+    plug.on('plug_4')
     update.message.reply_text(
         'Power status: ON')
     
 def power_off(bot, update):
     if not is_authorised(update):
         return False
-    plug.off()
+    plug.off('all')
+    update.message.reply_text(
+        'Power status: OFF')
+
+def power_off_2(bot, update):
+    if not is_authorised(update):
+        return False
+    plug.off('plug_2')
+    update.message.reply_text(
+        'Power status: OFF')
+
+def power_off_4(bot, update):
+    if not is_authorised(update):
+        return False
+    plug.off('plug_4')
     update.message.reply_text(
         'Power status: OFF')
 
@@ -40,6 +68,12 @@ def run_app():
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CommandHandler('power_on', power_on))
     updater.dispatcher.add_handler(CommandHandler('power_off', power_off))
+
+    updater.dispatcher.add_handler(CommandHandler('power_on_2', power_on_2))
+    updater.dispatcher.add_handler(CommandHandler('power_off_2', power_off_2))
+
+    updater.dispatcher.add_handler(CommandHandler('power_on_4', power_on_4))
+    updater.dispatcher.add_handler(CommandHandler('power_off_4', power_off_4))
     updater.start_polling()
     updater.idle()
 
