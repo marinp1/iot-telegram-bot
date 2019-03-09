@@ -22,32 +22,36 @@ def is_authorised(update):
 def power_on(bot, update, socket_id):
     if not is_authorised(update):
         return False
+
+    message = 'Turned all sockets ON' if socket_id == 'all' else 'Turned {} ON'.format(plug_names[socket_id])
+    reply_markup = telegram.ReplyKeyboardRemove()
+    bot.send_message(chat_id=update.message.chat.id, text=message, reply_markup=reply_markup)
+
     plug_controller.on(socket_id)
     if socket_id == 'all':
         plug_values['plug_2'] = True
         plug_values['plug_4'] = True
     else:
         plug_values[socket_id] = True
-    message = 'Turned all sockets ON' if socket_id == 'all' else 'Turned {} ON'.format(plug_names[socket_id])
-    reply_markup = telegram.ReplyKeyboardRemove()
-    bot.send_message(chat_id=update.message.chat.id, text=message, reply_markup=reply_markup)
     
 def power_off(bot, update, socket_id):
     if not is_authorised(update):
         return False
+
+    message = 'Turned all sockets OFF' if socket_id == 'all' else 'Turned {} OFF'.format(plug_names[socket_id])
+    reply_markup = telegram.ReplyKeyboardRemove()
+    bot.send_message(chat_id=update.message.chat.id, text=message, reply_markup=reply_markup)
+
     plug_controller.off(socket_id)
     if socket_id == 'all':
         plug_values['plug_2'] = False
         plug_values['plug_4'] = False
     else:
         plug_values[socket_id] = False
-    message = 'Turned all sockets OFF' if socket_id == 'all' else 'Turned {} OFF'.format(plug_names[socket_id])
-    reply_markup = telegram.ReplyKeyboardRemove()
-    bot.send_message(chat_id=update.message.chat.id, text=message, reply_markup=reply_markup)
 
 def start(bot, update):
     update.message.reply_text(
-        "This bot control and monitors Patrik's IOT devices.\n\nCurrently supported commands:\n/power_on\n/power_off")
+        "This bot control and monitors Patrik's IOT devices.\n\nCurrently supported commands:\n/power")
 
 def power(bot, update):
     if not is_authorised(update):
@@ -64,7 +68,7 @@ def power(bot, update):
     custom_keyboard = [[KEYBOARD_TEXT_1, KEYBOARD_TEXT_2], 
                     ['Turn all sockets OFF', 'Turn all sockets ON']]
 
-    reply_markup = telegram.ReplyKeyboardMarkup(custom_keyboard)
+    reply_markup = telegram.ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=True)
     bot.send_message(chat_id=update.message.chat.id,
                     text="What would you like to do?", 
                     reply_markup=reply_markup)
