@@ -19,47 +19,31 @@ def is_authorised(update):
         return False
     return True
 
-def power_on(bot, update):
+def power_on(bot, update, socket_id):
     if not is_authorised(update):
         return False
-    plug_controller.on('all')
-    update.message.reply_text(
-        'Power status: ON')
-
-def power_on_2(bot, update):
-    if not is_authorised(update):
-        return False
-    plug_controller.on('plug_2')
-    update.message.reply_text(
-        'Power status: ON')
-
-def power_on_4(bot, update):
-    if not is_authorised(update):
-        return False
-    plug_controller.on('plug_4')
-    update.message.reply_text(
-        'Power status: ON')
+    plug_controller.on(socket_id)
+    if socket_id == 'all':
+        plug_values['plug_2'] = True
+        plug_values['plug_4'] = True
+    else:
+        plug_values[socket_id] = True
+    message = 'Turned all sockets ON' if socket_id == 'all' else 'Turned {} ON'.format(plug_names[socket_id])
+    reply_markup = telegram.ReplyKeyboardRemove()
+    bot.send_message(chat_id=update.message.chat.id, text=message, reply_markup=reply_markup)
     
-def power_off(bot, update):
+def power_off(bot, update, socket_id):
     if not is_authorised(update):
         return False
-    plug_controller.off('all')
-    update.message.reply_text(
-        'Power status: OFF')
-
-def power_off_2(bot, update):
-    if not is_authorised(update):
-        return False
-    plug_controller.off('plug_2')
-    update.message.reply_text(
-        'Power status: OFF')
-
-def power_off_4(bot, update):
-    if not is_authorised(update):
-        return False
-    plug_controller.off('plug_4')
-    update.message.reply_text(
-        'Power status: OFF')
+    plug_controller.off(socket_id)
+    if socket_id == 'all':
+        plug_values['plug_2'] = False
+        plug_values['plug_4'] = False
+    else:
+        plug_values[socket_id] = False
+    message = 'Turned all sockets OFF' if socket_id == 'all' else 'Turned {} OFF'.format(plug_names[socket_id])
+    reply_markup = telegram.ReplyKeyboardRemove()
+    bot.send_message(chat_id=update.message.chat.id, text=message, reply_markup=reply_markup)
 
 def start(bot, update):
     update.message.reply_text(
@@ -71,6 +55,8 @@ def power(bot, update):
 
     if plug_values['plug_2'] is None:
         plug_controller.off('all')
+        plug_values['plug_2'] = False
+        plug_values['plug_4'] = False
 
     KEYBOARD_TEXT_1 = 'Turn {} OFF'.format(plug_names['plug_2']) if plug_values['plug_2'] else 'Turn {} OFF'.format(plug_names['plug_2'])
     KEYBOARD_TEXT_2 = 'Turn {} OFF'.format(plug_names['plug_4']) if plug_values['plug_4'] else 'Turn {} OFF'.format(plug_names['plug_4'])
@@ -83,22 +69,17 @@ def power(bot, update):
                     text="Socket control", 
                     reply_markup=reply_markup)
 
+def power_control(bot, update):
+    bot.send_message(chat_id=update.message.chat.id,
+                    text="Test")
+
 def run_app():
     global plug_controller
     plug_controller = EnergeniePlugController()
     updater = Updater(config.TELEGRAM_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', start))
-    updater.dispatcher.add_handler(CommandHandler('power_on', power_on))
-    updater.dispatcher.add_handler(CommandHandler('power_off', power_off))
-
-    updater.dispatcher.add_handler(CommandHandler('power_on_2', power_on_2))
-    updater.dispatcher.add_handler(CommandHandler('power_off_2', power_off_2))
-
-    updater.dispatcher.add_handler(CommandHandler('power_on_4', power_on_4))
-    updater.dispatcher.add_handler(CommandHandler('power_off_4', power_off_4))
-
     updater.dispatcher.add_handler(CommandHandler('power', power))
-
+    updater.dispatcher.add_handlerRegexHandler('^Turn $', power_control)
     updater.start_polling()
     updater.idle()
 
