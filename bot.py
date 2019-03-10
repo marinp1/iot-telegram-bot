@@ -1,5 +1,6 @@
 import telegram
 import config
+import re
 from controller import EnergeniePlugController
 from telegram.ext import Updater, CommandHandler, RegexHandler
 
@@ -51,7 +52,10 @@ def power_off(bot, update, socket_id):
 
 def start(bot, update):
     update.message.reply_text(
-        "This bot control and monitors Patrik's IOT devices.\n\nCurrently supported commands:\n/power")
+        "This bot controls and monitors Patrik's IoT devices.\n\nCurrently supported commands:\n/power")
+
+def get_keyboard_text_for_socket(socket_id):
+    return 'Turn {} OFF'.format(plug_names[socket_id]) if plug_values[socket_id] else 'Turn {} ON'.format(plug_names[socket_id])
 
 def power(bot, update):
     if not is_authorised(update):
@@ -62,31 +66,34 @@ def power(bot, update):
         plug_values['plug_2'] = False
         plug_values['plug_4'] = False
 
-    KEYBOARD_TEXT_1 = 'Turn {} OFF'.format(plug_names['plug_2']) if plug_values['plug_2'] else 'Turn {} ON'.format(plug_names['plug_2'])
-    KEYBOARD_TEXT_2 = 'Turn {} OFF'.format(plug_names['plug_4']) if plug_values['plug_4'] else 'Turn {} ON'.format(plug_names['plug_4'])
+    KEYBOARD_TEXT_1 = get_keyboard_text_for_socket('plug_2')
+    KEYBOARD_TEXT_2 = get_keyboard_text_for_socket('plug_4')
 
     custom_keyboard = [[KEYBOARD_TEXT_1, KEYBOARD_TEXT_2], 
-                    ['Turn all sockets OFF', 'Turn all sockets ON']]
+                    ['Turn all sockets ON', 'Turn all sockets OFF']]
 
     reply_markup = telegram.ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=True)
     bot.send_message(chat_id=update.message.chat.id,
                     text="What would you like to do?", 
                     reply_markup=reply_markup)
 
-def power_control(bot, update):
-    text = update.message.text
-    if text == 'Turn {} OFF'.format(plug_names['plug_2']):
-        power_off(bot, update, 'plug_2')
-    elif text == 'Turn {} ON'.format(plug_names['plug_2']):
-        power_on(bot, update, 'plug_2')
-    elif text == 'Turn {} OFF'.format(plug_names['plug_4']):
-        power_off(bot, update, 'plug_4')
-    elif text == 'Turn {} ON'.format(plug_names['plug_4']):
-        power_on(bot, update, 'plug_4')
-    elif text == 'Turn all sockets OFF':
-        power_off(bot, update, 'all')
-    elif text == 'Turn all sockets ON':
+def power_control_single(bot, update):
+    match = re.match('^Turn (.*?) (OFF|ON)$', update.message.text)
+    socket_name = match.group(1) if match else None
+    cmd = match.group(2) if match else None
+    socket_id = list(plug_names.keys())[list(plug_names.values()).index(socket_name)]
+    if cmd == 'ON':
+        power_on(bot, update, socket_id)
+    elif cmd == 'OFF':
+        power_off(bot, update, socket_id)
+
+def power_control_all(bot, update):
+    match = re.match('^Turn all sockets (ON|OFF)$', update.message.text)
+    cmd = match.group(1) if match else None
+    if cmd == 'ON':
         power_on(bot, update, 'all')
+    elif cmd == 'OFF':
+        power_off(bot, update, 'all')
 
 def run_app():
     global plug_controller
@@ -94,7 +101,8 @@ def run_app():
     updater = Updater(config.TELEGRAM_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CommandHandler('power', power))
-    updater.dispatcher.add_handler(RegexHandler('^Turn ', power_control))
+    updater.dispatcher.add_handler(RegexHandler('^Turn all sockets (ON|OFF)$', power_control_all))
+    updater.dispatcher.add_handler(RegexHandler('^Turn (.*?) (OFF|ON)$', power_control_single))
     updater.start_polling()
     updater.idle()
 
