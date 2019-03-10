@@ -1,6 +1,7 @@
 import telegram
 import config
 import re
+import numpy as np
 from controller import EnergeniePlugController
 from telegram.ext import Updater, CommandHandler, RegexHandler
 
@@ -8,6 +9,9 @@ plug_controller = None
 
 plug_names = {'plug_2': 'Socket #2', 'plug_4': 'Socket #4'}
 plug_values = {'plug_2' : None, 'plug_4' : None}
+
+current_command = None
+socket_to_be_renamed = None
 
 def is_authorised(update):
     if not str(update.message.from_user.id) == config.APPROVED_USER_ID:
@@ -52,7 +56,7 @@ def power_off(bot, update, socket_id):
 
 def start(bot, update):
     update.message.reply_text(
-        "This bot controls and monitors Patrik's IoT devices.\n\nCurrently supported commands:\n/power")
+        "This bot controls and monitors Patrik's IoT devices.\n\nCurrently supported commands:\n/power\n/rename_socket")
 
 def get_keyboard_text_for_socket(socket_id):
     return 'Turn {} OFF'.format(plug_names[socket_id]) if plug_values[socket_id] else 'Turn {} ON'.format(plug_names[socket_id])
@@ -95,14 +99,70 @@ def power_control_all(bot, update):
     elif cmd == 'OFF':
         power_off(bot, update, 'all')
 
+def rename_socket(bot, update):
+    is_odd = len(list(plug_names.values())) % 2 == 1
+    tmp = list(plug_names.values())
+    if is_odd:
+        tmp.append('Temp') 
+    keyboard_items = np.asarray(tmp).reshape(-1, 2).tolist()
+    if is_odd:
+        del keyboard_items[-1][-1]
+
+    reply_markup = telegram.ReplyKeyboardMarkup(keyboard=keyboard_items, one_time_keyboard=True)
+    bot.send_message(chat_id=update.message.chat.id,
+                    text="Which socket would you like to rename?", 
+                    reply_markup=reply_markup)
+
+def rename_socket_response(bot, update):
+    global current_command
+    global socket_to_be_renamed
+
+    if not is_authorised(update):
+        return False
+
+    match = re.match('^Rename (.*?)$', update.message.text)
+    socket_name = match.group(1) if match else None
+    socket_id = list(plug_names.keys())[list(plug_names.values()).index(socket_name)]
+
+    if not socket_id is None:
+        current_command = 'RENAME_SOCKET'
+        socket_to_be_renamed = socket_id
+        message = 'Give a new name for socket {}'.format(socket_name)
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat.id, text=message, reply_markup=reply_markup)
+    else:
+        current_command = None
+        socket_to_be_renamed = None
+
+def custom_text(bot, update):
+    if not update.message.text:
+        return False
+
+    def reset_custom_command():
+        global socket_to_be_renamed
+        global current_command
+        current_command = None
+        socket_to_be_renamed = None
+
+    global plug_names
+    if current_command == 'RENAME_SOCKET':
+        if not socket_to_be_renamed is None:
+            new_name = update.message.text.strip()
+            plug_names[socket_to_be_renamed] = new_name
+            reset_custom_command()
+            bot.send_message(chat_id=update.message.chat.id, text="Name updated successfully")
+
 def run_app():
     global plug_controller
     plug_controller = EnergeniePlugController()
     updater = Updater(config.TELEGRAM_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CommandHandler('power', power))
+    updater.dispatcher.add_handler(CommandHandler('rename_socket', rename_socket))
     updater.dispatcher.add_handler(RegexHandler('^Turn all sockets (ON|OFF)$', power_control_all))
     updater.dispatcher.add_handler(RegexHandler('^Turn (.*?) (OFF|ON)$', power_control_single))
+    updater.dispatcher.add_handler(RegexHandler('^Rename (.*?)$', rename_socket_response))
+    updater.dispatcher.add_handler(RegexHandler('^(.*?)$', custom_text))
     updater.start_polling()
     updater.idle()
 
