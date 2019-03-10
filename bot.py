@@ -76,7 +76,7 @@ def power(bot, update):
     custom_keyboard = [[KEYBOARD_TEXT_1, KEYBOARD_TEXT_2], 
                     ['Turn all sockets ON', 'Turn all sockets OFF']]
 
-    reply_markup = telegram.ReplyKeyboardMarkup(keyboard=custom_keyboard, one_time_keyboard=True)
+    reply_markup = telegram.ReplyKeyboardMarkup(keyboard=custom_keyboard)
     bot.send_message(chat_id=update.message.chat.id,
                     text="What would you like to do?", 
                     reply_markup=reply_markup)
@@ -125,14 +125,14 @@ def rename_socket_response(bot, update):
 
     match = re.match('^(.*?)$', update.message.text)
     socket_name = match.group(1) if match else None
-    socket_id = list(plug_names.keys())[list(plug_names.values()).index(socket_name)]
 
-    if not socket_id is None:
+    try:
+        socket_id = list(plug_names.keys())[list(plug_names.values()).index(socket_name)]
         socket_to_be_renamed = socket_id
         message = 'Give a new name for socket {}'.format(socket_name)
         reply_markup = telegram.ReplyKeyboardRemove()
         bot.send_message(chat_id=update.message.chat.id, text=message, reply_markup=reply_markup)
-    else:
+    except:
         current_command = None
         socket_to_be_renamed = None
         message = 'Could not match socket name with socket id'
