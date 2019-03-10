@@ -1,19 +1,48 @@
 import energenie
+import time
 
-class EnergeniePlugController:
+class IndividualSocket:
+    def __init__(self, id, name = None):
+        self.device = energenie.Devices.MIHO008((None, id))
+        self.id = id
+        self.name = 'Socket #{}'.format(id) if name is None else name
+        self.turn_off()
+
+    def turn_on(self, no_action = False):
+        self.value = True
+        self.device.turn_on()
+
+    def turn_off(self):
+        self.value = False
+        self.device.turn_off()
+
+    def get_name(self):
+        return self.name
+
+    def get_value(self):
+        return self.value
+
+    def rename(self, new_name):
+        self.name = new_name.strip()
+        return self.name
+
+class EnergenieSocketController:
     def __init__(self):
         energenie.init()
-        self.devices = {
-            'all': energenie.Devices.MIHO008((None, 0)),
-            'plug_2': energenie.Devices.MIHO008((None, 2)),
-            'plug_4': energenie.Devices.MIHO008((None, 4)),
-        }
-        
-    def on(self, id):
-        self.devices[id].turn_on()
-        
-    def off(self, id):
-        self.devices[id].turn_off()
-        
+        self.all_sockets = []
+
+    def add_socket(self, id):
+        socket = IndividualSocket(id)
+        self.all_sockets.append(socket)
+        return socket
+
+    def turn_all_off(self):
+        for socket in self.all_sockets:
+            socket.turn_off()
+
+    def turn_all_on(self):
+        for socket in self.all_sockets:
+            socket.turn_on()
+    
     def cleanup(self):
         energenie.finished()
