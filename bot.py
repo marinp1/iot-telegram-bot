@@ -108,7 +108,10 @@ def rename_socket(bot, update):
     if is_odd:
         del keyboard_items[-1][-1]
 
-    reply_markup = telegram.ReplyKeyboardMarkup(keyboard=keyboard_items, one_time_keyboard=True)
+    global current_command
+    current_command = 'RENAME_SOCKET'
+
+    reply_markup = telegram.ReplyKeyboardMarkup(keyboard=keyboard_items)
     bot.send_message(chat_id=update.message.chat.id,
                     text="Which socket would you like to rename?", 
                     reply_markup=reply_markup)
@@ -120,12 +123,11 @@ def rename_socket_response(bot, update):
     if not is_authorised(update):
         return False
 
-    match = re.match('^Rename (.*?)$', update.message.text)
+    match = re.match('^(.*?)$', update.message.text)
     socket_name = match.group(1) if match else None
     socket_id = list(plug_names.keys())[list(plug_names.values()).index(socket_name)]
 
     if not socket_id is None:
-        current_command = 'RENAME_SOCKET'
         socket_to_be_renamed = socket_id
         message = 'Give a new name for socket {}'.format(socket_name)
         reply_markup = telegram.ReplyKeyboardRemove()
@@ -133,6 +135,9 @@ def rename_socket_response(bot, update):
     else:
         current_command = None
         socket_to_be_renamed = None
+        message = 'Could not match socket name with socket id'
+        reply_markup = telegram.ReplyKeyboardRemove()
+        bot.send_message(chat_id=update.message.chat.id, text=message, reply_markup=reply_markup)
 
 def custom_text(bot, update):
     if not update.message.text:
@@ -150,7 +155,9 @@ def custom_text(bot, update):
             new_name = update.message.text.strip()
             plug_names[socket_to_be_renamed] = new_name
             reset_custom_command()
-            bot.send_message(chat_id=update.message.chat.id, text="Name updated successfully")
+            bot.send_message(chat_id=update.message.chat.id, text="Socket name updated successfully")
+        else:
+            rename_socket_response(bot, update)
 
 def run_app():
     global plug_controller
@@ -161,7 +168,6 @@ def run_app():
     updater.dispatcher.add_handler(CommandHandler('rename_socket', rename_socket))
     updater.dispatcher.add_handler(RegexHandler('^Turn all sockets (ON|OFF)$', power_control_all))
     updater.dispatcher.add_handler(RegexHandler('^Turn (.*?) (OFF|ON)$', power_control_single))
-    updater.dispatcher.add_handler(RegexHandler('^Rename (.*?)$', rename_socket_response))
     updater.dispatcher.add_handler(RegexHandler('^(.*?)$', custom_text))
     updater.start_polling()
     updater.idle()
