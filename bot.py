@@ -162,7 +162,8 @@ def custom_text(bot, update):
 def run_app():
     global plug_controller
     plug_controller = EnergeniePlugController()
-    updater = Updater(config.TELEGRAM_TOKEN)
+    updater = Updater(token=config.TELEGRAM_TOKEN, use_context=False)
+    #updater = Updater(config.TELEGRAM_TOKEN)
     updater.dispatcher.add_handler(CommandHandler('start', start))
     updater.dispatcher.add_handler(CommandHandler('power', power))
     updater.dispatcher.add_handler(CommandHandler('rename_socket', rename_socket))
